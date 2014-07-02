@@ -1,6 +1,8 @@
 package main
 
-type Team *string
+type Team struct {
+	login string
+}
 
 type Command struct {
 	Name   string
