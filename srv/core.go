@@ -19,6 +19,10 @@ type Game interface {
 	Tick()
 }
 
+func (err *CommandError) ShouldWait() bool {
+	return err != nil && err.Id == 6
+}
+
 func AuthenticationFailedError() *CommandError {
 	return &CommandError{1, "bad login or password"}
 }

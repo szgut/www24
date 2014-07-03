@@ -66,16 +66,24 @@ func authenticated(proto Proto, team Team, bch chan<- CommandMessage, wait func(
 	fmt.Println(team, "connected")
 	defer fmt.Println(team, "disconnected")
 
+	waitOk := func(msg string) {
+		proto.writeln(msg)
+		wait()
+		proto.Write(nil)
+	}
+
 	for cmd := proto.Command(); cmd != nil; cmd = proto.Command() {
 		if cmd.Name == "WAIT" {
-			proto.Write(nil, []interface{}{"WAITING"})
-			wait()
 			proto.Write(nil)
+			waitOk("WAITING")
 		} else {
 			rch := make(chan ResultMessage)
 			bch <- CommandMessage{team, *cmd, rch}
 			result := <-rch
 			proto.Write(result.Err, result.Params)
+			if result.Err.ShouldWait() {
+				waitOk("FORCED_WAITING")
+			}
 		}
 	}
 }
