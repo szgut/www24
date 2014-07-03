@@ -50,7 +50,7 @@ func handleConnection(conn net.Conn, auth Authenticator, bch chan<- CommandMessa
 	}
 	team := auth.Authenticate(login, pass)
 	if team == nil {
-		proto.Write(&CommandError{Desc: "authentication failed"})
+		proto.Write(AuthenticationFailedError())
 	} else {
 		proto.Write(nil)
 		authenticated(proto, *team, bch, wait)
