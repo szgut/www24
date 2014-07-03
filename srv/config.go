@@ -1,17 +1,16 @@
 package main
 
-import "fmt"
 import "io/ioutil"
 import "gopkg.in/yaml.v1"
 
 type Config struct {
-	Path string
-	Teams map[string]string
+	Port     int
+	Path     string
+	Teams    map[string]string
 	Interval int
 }
 
 func ReadConfig(path string) (*Config, error) {
-	fmt.Println(path)
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -21,7 +20,6 @@ func ReadConfig(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("%+v\n", config)
 	return &config, nil
 }
 

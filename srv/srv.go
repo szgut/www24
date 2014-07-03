@@ -6,11 +6,6 @@ import (
 	"os"
 )
 
-const (
-	LISTEN_HOST = "localhost"
-	LISTEN_PORT = 3333
-)
-
 func check(err error) {
 	if err != nil {
 		fmt.Println("Fatal error:", err.Error())
@@ -26,13 +21,22 @@ func listen(host string, port int) net.Listener {
 	return listener
 }
 
+func configPath() string {
+	if len(os.Args) != 2 {
+		fmt.Printf("%s <config path>\n", os.Args[0])
+		os.Exit(1)
+	}
+	return os.Args[1]
+}
+
 func main() {
-	l := listen(LISTEN_HOST, LISTEN_PORT)
+	config, err := ReadConfig(configPath())
+	check(err)
+
+	l := listen("localhost", config.Port)
 	defer l.Close()
 
-	config, err := ReadConfig(os.Args[1])
-	check(err)
-	bch, wait := StartBackend(&SimpleGame{})
+	bch, wait := StartBackend(config)
 	for {
 		conn, err := l.Accept()
 		check(err)

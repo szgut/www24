@@ -14,9 +14,11 @@ type ResultMessage struct {
 	Params []interface{}
 }
 
-func StartBackend(game Game) (ch chan<- CommandMessage, wait func()) {
+func StartBackend(config *Config) (ch chan<- CommandMessage, wait func()) {
+	game := &SimpleGame{}
+
 	cmdCh := make(chan CommandMessage)
-	tickWait, tickCh := newTicker(1)
+	tickWait, tickCh := newTicker(config.Interval)
 	go func() {
 		for {
 			select {
@@ -50,7 +52,7 @@ func (ch notifier) wait() {
 
 func newTicker(interval int) (func(), notifier) {
 	tickCh := make(notifier)
-	
+
 	go func() {
 		for {
 			time.Sleep(time.Duration(interval) * time.Second)
@@ -76,7 +78,7 @@ func newTicker(interval int) (func(), notifier) {
 					listener.notify()
 				}
 				queue = nil
-				tickCh <- 0
+				tickCh.notify()
 
 			case listener := <-listenCh:
 				queue = append(queue, listener)

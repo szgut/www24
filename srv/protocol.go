@@ -6,8 +6,7 @@ import "bufio"
 import "strings"
 
 type Proto struct {
-	conn io.ReadWriteCloser
-	//scanner *bufio.Scanner
+	conn   io.ReadWriteCloser
 	reader *bufio.Reader
 }
 
