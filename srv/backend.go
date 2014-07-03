@@ -15,7 +15,7 @@ type ResultMessage struct {
 }
 
 func StartBackend(config *Config) (ch chan<- CommandMessage, wait func()) {
-	game := &SimpleGame{}
+	game := Throttler(config.Commands, &SimpleGame{})
 
 	cmdCh := make(chan CommandMessage)
 	tickWait, tickCh := newTicker(config.Interval)

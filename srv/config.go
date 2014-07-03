@@ -8,6 +8,7 @@ type Config struct {
 	Path     string
 	Teams    map[string]string
 	Interval int
+	Commands int
 }
 
 func ReadConfig(path string) (*Config, error) {
