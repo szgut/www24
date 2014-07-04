@@ -37,15 +37,21 @@ func main() {
 	defer l.Close()
 
 	bch, wait := StartBackend(config)
+	dos := NewDoS(config.Connections)
 	for {
 		conn, err := l.Accept()
 		check(err)
-		go handleConnection(conn, config, bch, wait)
+		if dos.Accept(conn) {
+			go handleConnection(conn, dos, config, bch, wait)
+		} else {
+			conn.Close()
+		}
 	}
 }
 
-func handleConnection(conn net.Conn, auth Authenticator, bch chan<- CommandMessage, wait func()) {
+func handleConnection(conn net.Conn, dos DoS, auth Authenticator, bch chan<- CommandMessage, wait func()) {
 	defer conn.Close()
+	defer dos.Release(conn)
 	proto := NewProto(conn)
 
 	login, pass, err := proto.Credentials()

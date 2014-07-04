@@ -4,11 +4,12 @@ import "io/ioutil"
 import "gopkg.in/yaml.v1"
 
 type Config struct {
-	Port     int
-	Path     string
-	Teams    map[string]string
-	Interval int
-	Commands int
+	Port        int
+	Path        string
+	Teams       map[string]string
+	Interval    int
+	Commands    int
+	Connections int
 }
 
 func ReadConfig(path string) (*Config, error) {
