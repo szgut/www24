@@ -1,15 +1,13 @@
 package main
 
-import (
-	"fmt"
-	"net"
-	"os"
-)
+import "fmt"
+import "net"
+import "os"
+import "log"
 
 func check(err error) {
 	if err != nil {
-		fmt.Println("Fatal error:", err.Error())
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
 
@@ -17,7 +15,7 @@ func listen(host string, port int) net.Listener {
 	hostport := fmt.Sprintf("%s:%d", host, port)
 	listener, err := net.Listen("tcp", hostport)
 	check(err)
-	fmt.Println("Listening on " + hostport)
+	log.Println("Listening on " + hostport)
 	return listener
 }
 
@@ -29,7 +27,12 @@ func configPath() string {
 	return os.Args[1]
 }
 
+func initLogger() {
+	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
+}
+
 func main() {
+	initLogger()
 	config, err := ReadConfig(configPath())
 	check(err)
 
@@ -63,14 +66,13 @@ func handleConnection(conn net.Conn, dos DoS, auth Authenticator, bch chan<- Com
 		proto.Write(AuthenticationFailedError())
 	} else {
 		proto.Write(nil)
+		log.Println("Team", team, conn.RemoteAddr(), "authenticated")
 		authenticated(proto, *team, bch, wait)
 	}
-	fmt.Println(team)
 }
 
 func authenticated(proto Proto, team Team, bch chan<- CommandMessage, wait func()) {
-	fmt.Println(team, "connected")
-	defer fmt.Println(team, "disconnected")
+	defer log.Println("Team", team, "disconnected")
 
 	waitOk := func(msg string) {
 		proto.writeln(msg)

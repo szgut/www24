@@ -4,6 +4,10 @@ type Team struct {
 	login string
 }
 
+func (team *Team) String() string {
+	return team.login
+}
+
 type Command struct {
 	Name   string
 	Params []string

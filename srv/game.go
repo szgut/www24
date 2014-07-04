@@ -1,6 +1,6 @@
 package main
 
-import "fmt"
+import "log"
 
 type SimpleGame struct {
 	round int
@@ -16,5 +16,5 @@ func (game *SimpleGame) Execute(team Team, cmd Command) (params []interface{}, e
 
 func (game *SimpleGame) Tick() {
 	game.round++
-	fmt.Println("round no:", game.round)
+	log.Println("round", game.round)
 }

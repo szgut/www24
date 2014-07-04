@@ -1,7 +1,7 @@
 package main
 
 import "time"
-import "fmt"
+import "log"
 
 type CommandMessage struct {
 	Team Team
@@ -68,7 +68,7 @@ func newTicker(interval int) (func(), notifier) {
 		queue := []notifier{}
 		for {
 			if len(queue) > 0 {
-				fmt.Println(queue)
+				log.Println("waiting:", queue)
 			}
 			select {
 			case <-tickCh:

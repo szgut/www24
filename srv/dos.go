@@ -1,6 +1,6 @@
 package main
 
-import "fmt"
+import "log"
 import "net"
 
 type DoS interface {
@@ -29,7 +29,7 @@ func (d *dos) Accept(conn net.Conn) bool {
 	ip := remoteIP(conn)
 	if d.used[ip] < d.limit {
 		d.used[ip]++
-		fmt.Printf("Accepted %s (%d)\n", ip, d.used[ip])
+		log.Printf("Accepted %s (%d)\n", ip, d.used[ip])
 		return true
 	}
 	return false
@@ -38,5 +38,5 @@ func (d *dos) Accept(conn net.Conn) bool {
 func (d *dos) Release(conn net.Conn) {
 	ip := remoteIP(conn)
 	d.used[ip]--
-	fmt.Printf("Released %s (%d)\n", ip, d.used[ip])
+	log.Printf("Released %s (%d)\n", ip, d.used[ip])
 }
