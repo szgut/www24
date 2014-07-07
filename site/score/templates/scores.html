@@ -1,0 +1,17 @@
+<html>
+<head>
+<title>Contest Scores</title>
+</head>
+<body>
+
+<h1>Contest Scores</h1>
+
+<table border>
+<tr><th>team</th><th>score</th></tr>
+{% for team in teams %}
+<tr><td>{{team.name}}</td><td>{{team.score}}</td></tr>
+{% endfor %}
+</table>
+
+</body>
+</html>
