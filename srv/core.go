@@ -13,13 +13,18 @@ type Command struct {
 	Params []string
 }
 
+type CommandResult struct {
+	Err    *CommandError
+	Params []interface{}
+}
+
 type CommandError struct {
 	Id   int
 	Desc string
 }
 
 type Game interface {
-	Execute(team Team, cmd Command) (params []interface{}, err *CommandError)
+	Execute(team Team, cmd Command) CommandResult
 	Tick()
 }
 

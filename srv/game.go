@@ -6,11 +6,11 @@ type SimpleGame struct {
 	round int
 }
 
-func (game *SimpleGame) Execute(team Team, cmd Command) (params []interface{}, err *CommandError) {
+func (game *SimpleGame) Execute(team Team, cmd Command) CommandResult {
 	if cmd.Name != "DUPA" {
-		return []interface{}{cmd.Name, cmd.Params}, nil
+		return CommandResult{nil, []interface{}{cmd.Name, cmd.Params}}
 	} else {
-		return nil, &CommandError{Desc: "spadaj"}
+		return CommandResult{&CommandError{Desc: "spadaj"}, nil}
 	}
 }
 

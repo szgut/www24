@@ -3,21 +3,36 @@ package main
 import "time"
 import "log"
 
-type CommandMessage struct {
-	Team Team
-	Cmd  Command
-	Ch   chan<- ResultMessage
+type Backend interface {
+	Command(team Team, cmd Command) CommandResult
+	Wait()
 }
 
-type ResultMessage struct {
-	Err    *CommandError
-	Params []interface{}
+type commandMessage struct {
+	team Team
+	cmd  Command
+	ch   chan<- CommandResult
 }
 
-func StartBackend(config *Config) (ch chan<- CommandMessage, wait func()) {
+type backend struct {
+	ch   chan commandMessage
+	wait func()
+}
+
+func (b *backend) Command(team Team, cmd Command) CommandResult {
+	ch := make(chan CommandResult)
+	b.ch <- commandMessage{team, cmd, ch}
+	return <-ch
+}
+
+func (b *backend) Wait() {
+	b.wait()
+}
+
+func StartBackend(config *Config) Backend {
 	game := Throttler(config.Commands, &SimpleGame{})
 
-	cmdCh := make(chan CommandMessage)
+	cmdCh := make(chan commandMessage)
 	tickWait, tickCh := newTicker(config.Interval)
 	go func() {
 		for {
@@ -33,12 +48,11 @@ func StartBackend(config *Config) (ch chan<- CommandMessage, wait func()) {
 				game.Tick()
 				tickCh.notify()
 			case msg := <-cmdCh:
-				params, err := game.Execute(msg.Team, msg.Cmd)
-				msg.Ch <- ResultMessage{Err: err, Params: params}
+				msg.ch <- game.Execute(msg.team, msg.cmd)
 			}
 		}
 	}()
-	return cmdCh, tickWait
+	return &backend{ch: cmdCh, wait: tickWait}
 }
 
 type notifier chan int

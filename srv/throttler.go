@@ -6,13 +6,14 @@ type throttler struct {
 	used  map[Team]int
 }
 
-func (t *throttler) Execute(team Team, cmd Command) (params []interface{}, err *CommandError) {
+func (t *throttler) Execute(team Team, cmd Command) CommandResult {
 	t.used[team]++
 	if t.used[team] > t.limit {
-		return nil, CommandLimitReachedError()
+		return CommandResult{CommandLimitReachedError(), nil}
 	}
 	return t.game.Execute(team, cmd)
 }
+
 func (t *throttler) Tick() {
 	t.used = make(map[Team]int)
 	t.game.Tick()
