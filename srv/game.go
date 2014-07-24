@@ -3,7 +3,7 @@ package main
 import "log"
 
 type SimpleGame struct {
-	round int
+	turn int
 }
 
 func (game *SimpleGame) Execute(team Team, cmd Command) CommandResult {
@@ -15,6 +15,6 @@ func (game *SimpleGame) Execute(team Team, cmd Command) CommandResult {
 }
 
 func (game *SimpleGame) Tick() {
-	game.round++
-	log.Println("round", game.round)
+	game.turn++
+	log.Println("turn", game.turn)
 }

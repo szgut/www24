@@ -4,7 +4,7 @@ type Team struct {
 	login string
 }
 
-func (team *Team) String() string {
+func (team Team) String() string {
 	return team.login
 }
 

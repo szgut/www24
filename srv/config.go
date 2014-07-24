@@ -36,3 +36,11 @@ func (config *Config) Authenticate(login, pass string) *Team {
 		return nil
 	}
 }
+
+func (config *Config) ListTeams() []Team {
+	teams := make([]Team, 0)
+	for login, _ := range config.Teams {
+		teams = append(teams, Team{login})
+	}
+	return teams
+}

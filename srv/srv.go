@@ -35,6 +35,7 @@ func main() {
 	initLogger()
 	config, err := ReadConfig(configPath())
 	check(err)
+	log.Println("Teams:", config.ListTeams())
 
 	l := listen("localhost", config.Port)
 	defer l.Close()
