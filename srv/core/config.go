@@ -30,7 +30,8 @@ type Authenticator interface {
 }
 
 func (config *Config) Authenticate(login, pass string) *Team {
-	if config.Teams[login] == pass {
+	correctPass, ok := config.Teams[login]
+	if ok && pass == correctPass {
 		return &Team{login}
 	} else {
 		return nil
