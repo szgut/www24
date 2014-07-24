@@ -1,11 +1,14 @@
 from django.db import models
 
-class Team(models.Model):
-    name = models.CharField(primary_key=True, max_length=50)
+class Score(models.Model):
+    team = models.CharField(max_length=100)
+    task = models.CharField(max_length=100)
+    snapshot = models.IntegerField()
     score = models.FloatField()
-    
-    def __unicode__(self):
-        return self.name
 
-class Snapshot(Team):
-    round = models.IntegerField()
+    class Meta:
+        db_table = 'score'
+        unique_together = ('team', 'task', 'snapshot')
+
+    def __unicode__(self):
+        return "%s/%s#%s" % (self.team, self.task, self.snapshot)

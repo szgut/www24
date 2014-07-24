@@ -1,4 +1,4 @@
 from django.contrib import admin
-from score.models import Team
+from score.models import Score
 
-admin.site.register(Team)
+admin.site.register(Score)
