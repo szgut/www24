@@ -4,6 +4,7 @@ import "io"
 import "fmt"
 import "bufio"
 import "strings"
+import "github.com/szgut/www24/srv/core"
 
 type Proto struct {
 	conn   io.ReadWriteCloser
@@ -27,7 +28,7 @@ func (proto *Proto) writeln(values ...interface{}) error {
 	return err
 }
 
-func (proto *Proto) Write(err *CommandError, lines ...[]interface{}) {
+func (proto *Proto) Write(err *core.CommandError, lines ...[]interface{}) {
 	if err == nil {
 		proto.writeln("OK")
 	} else {
@@ -38,7 +39,7 @@ func (proto *Proto) Write(err *CommandError, lines ...[]interface{}) {
 	}
 }
 
-func (proto *Proto) Command() *Command {
+func (proto *Proto) Command() *core.Command {
 	for {
 		line, err := proto.readln()
 		if err != nil {
@@ -46,7 +47,7 @@ func (proto *Proto) Command() *Command {
 		}
 		words := strings.Fields(line)
 		if len(words) > 0 {
-			return &Command{strings.ToUpper(words[0]), words[1:]}
+			return &core.Command{strings.ToUpper(words[0]), words[1:]}
 		}
 	}
 }

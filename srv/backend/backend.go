@@ -1,17 +1,19 @@
-package main
+package backend
 
 import "time"
 import "log"
+import "github.com/szgut/www24/srv/game"
+import "github.com/szgut/www24/srv/core"
 
 type Backend interface {
-	Command(team Team, cmd Command) CommandResult
+	Command(team core.Team, cmd core.Command) core.CommandResult
 	Wait()
 }
 
 type commandMessage struct {
-	team Team
-	cmd  Command
-	ch   chan<- CommandResult
+	team core.Team
+	cmd  core.Command
+	ch   chan<- core.CommandResult
 }
 
 type backend struct {
@@ -19,8 +21,8 @@ type backend struct {
 	wait func()
 }
 
-func (b *backend) Command(team Team, cmd Command) CommandResult {
-	ch := make(chan CommandResult)
+func (b *backend) Command(team core.Team, cmd core.Command) core.CommandResult {
+	ch := make(chan core.CommandResult)
 	b.ch <- commandMessage{team, cmd, ch}
 	return <-ch
 }
@@ -29,8 +31,8 @@ func (b *backend) Wait() {
 	b.wait()
 }
 
-func StartBackend(config *Config) Backend {
-	game := Throttler(config.Commands, &SimpleGame{})
+func StartNew(config *core.Config) Backend {
+	game := Throttler(config.Commands, &game.SimpleGame{})
 
 	cmdCh := make(chan commandMessage)
 	tickWait, tickCh := newTicker(config.Interval)

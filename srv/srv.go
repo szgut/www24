@@ -4,6 +4,8 @@ import "fmt"
 import "net"
 import "os"
 import "log"
+import "github.com/szgut/www24/srv/backend"
+import "github.com/szgut/www24/srv/core"
 
 func check(err error) {
 	if err != nil {
@@ -33,27 +35,27 @@ func initLogger() {
 
 func main() {
 	initLogger()
-	config, err := ReadConfig(configPath())
+	config, err := core.ReadConfig(configPath())
 	check(err)
 	log.Println("Teams:", config.ListTeams())
 
 	l := listen("localhost", config.Port)
 	defer l.Close()
 
-	backend := StartBackend(config)
+	gb := backend.StartNew(config)
 	dos := NewDoS(config.Connections)
 	for {
 		conn, err := l.Accept()
 		check(err)
 		if dos.Accept(conn) {
-			go handleConnection(conn, dos, config, backend)
+			go handleConnection(conn, dos, config, gb)
 		} else {
 			conn.Close()
 		}
 	}
 }
 
-func handleConnection(conn net.Conn, dos DoS, auth Authenticator, backend Backend) {
+func handleConnection(conn net.Conn, dos DoS, auth core.Authenticator, backend backend.Backend) {
 	defer conn.Close()
 	defer dos.Release(conn)
 	proto := NewProto(conn)
@@ -64,7 +66,7 @@ func handleConnection(conn net.Conn, dos DoS, auth Authenticator, backend Backen
 	}
 	team := auth.Authenticate(login, pass)
 	if team == nil {
-		proto.Write(AuthenticationFailedError())
+		proto.Write(core.AuthenticationFailedError())
 	} else {
 		proto.Write(nil)
 		log.Println("Team", team, conn.RemoteAddr(), "authenticated")
@@ -72,7 +74,7 @@ func handleConnection(conn net.Conn, dos DoS, auth Authenticator, backend Backen
 	}
 }
 
-func authenticated(proto Proto, team Team, backend Backend) {
+func authenticated(proto Proto, team core.Team, backend backend.Backend) {
 	defer log.Println("Team", team, "disconnected")
 
 	waitOk := func(msg string) {
