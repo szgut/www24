@@ -6,6 +6,7 @@ import "os"
 import "log"
 import "github.com/szgut/www24/srv/backend"
 import "github.com/szgut/www24/srv/core"
+import "github.com/szgut/www24/srv/score"
 
 func check(err error) {
 	if err != nil {
@@ -38,6 +39,9 @@ func main() {
 	config, err := core.ReadConfig(configPath())
 	check(err)
 	log.Println("Teams:", config.ListTeams())
+
+	ss := score.NewScoreStorage(config.Path, config.Task)
+	fmt.Println(ss)
 
 	l := listen("localhost", config.Port)
 	defer l.Close()
