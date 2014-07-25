@@ -46,20 +46,21 @@ func main() {
 	l := listen("localhost", config.Port)
 	defer l.Close()
 
-	gb := backend.StartNew(config)
+	bend, err := backend.StartNew(config)
+	check(err)
 	dos := NewDoS(config.Connections)
 	for {
 		conn, err := l.Accept()
 		check(err)
 		if dos.Accept(conn) {
-			go handleConnection(conn, dos, config, gb)
+			go handleConnection(conn, dos, config, bend)
 		} else {
 			conn.Close()
 		}
 	}
 }
 
-func handleConnection(conn net.Conn, dos DoS, auth core.Authenticator, backend backend.Backend) {
+func handleConnection(conn net.Conn, dos DoS, auth core.Authenticator, bend backend.Backend) {
 	defer conn.Close()
 	defer dos.Release(conn)
 	proto := NewProto(conn)
@@ -74,16 +75,16 @@ func handleConnection(conn net.Conn, dos DoS, auth core.Authenticator, backend b
 	} else {
 		proto.Write(nil)
 		log.Println("Team", team, conn.RemoteAddr(), "authenticated")
-		authenticated(proto, *team, backend)
+		authenticated(proto, *team, bend)
 	}
 }
 
-func authenticated(proto Proto, team core.Team, backend backend.Backend) {
+func authenticated(proto Proto, team core.Team, bend backend.Backend) {
 	defer log.Println("Team", team, "disconnected")
 
 	waitOk := func(msg string) {
 		proto.writeln(msg)
-		backend.Wait()
+		bend.Wait()
 		proto.Write(nil)
 	}
 
@@ -92,7 +93,7 @@ func authenticated(proto Proto, team core.Team, backend backend.Backend) {
 			proto.Write(nil)
 			waitOk("WAITING")
 		} else {
-			result := backend.Command(team, *cmd)
+			result := bend.Command(team, *cmd)
 			proto.Write(result.Err, result.Params)
 			if result.Err.ShouldWait() {
 				waitOk("FORCED_WAITING")

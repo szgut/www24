@@ -31,8 +31,12 @@ func (b *backend) Wait() {
 	b.wait()
 }
 
-func StartNew(config *core.Config) Backend {
-	game := Throttler(config.Commands, &game.SimpleGame{})
+func StartNew(config *core.Config) (Backend, error) {
+	cons, err := game.RegistryFind(config.Game)
+	if err != nil {
+		return nil, err
+	}
+	game := Throttler(config.Commands, cons(config))
 
 	cmdCh := make(chan commandMessage)
 	tickWait, tickCh := newTicker(config.Interval)
@@ -54,7 +58,7 @@ func StartNew(config *core.Config) Backend {
 			}
 		}
 	}()
-	return &backend{ch: cmdCh, wait: tickWait}
+	return &backend{ch: cmdCh, wait: tickWait}, nil
 }
 
 type notifier chan int

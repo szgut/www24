@@ -3,11 +3,11 @@ package game
 import "log"
 import "github.com/szgut/www24/srv/core"
 
-type SimpleGame struct {
+type simpleGame struct {
 	turn int
 }
 
-func (game *SimpleGame) Execute(team core.Team, cmd core.Command) core.CommandResult {
+func (game *simpleGame) Execute(team core.Team, cmd core.Command) core.CommandResult {
 	if cmd.Name != "DUPA" {
 		return core.CommandResult{nil, []interface{}{cmd.Name, cmd.Params}}
 	} else {
@@ -15,7 +15,11 @@ func (game *SimpleGame) Execute(team core.Team, cmd core.Command) core.CommandRe
 	}
 }
 
-func (game *SimpleGame) Tick() {
+func (game *simpleGame) Tick() {
 	game.turn++
 	log.Println("turn", game.turn)
+}
+
+func newSimpleGame(config *core.Config) Game {
+	return new(simpleGame)
 }

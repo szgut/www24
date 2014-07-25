@@ -1,9 +1,10 @@
 package backend
 
 import "github.com/szgut/www24/srv/core"
+import "github.com/szgut/www24/srv/game"
 
 type throttler struct {
-	game  core.Game
+	game  game.Game
 	limit int
 	used  map[core.Team]int
 }
@@ -21,6 +22,6 @@ func (t *throttler) Tick() {
 	t.game.Tick()
 }
 
-func Throttler(limit int, game core.Game) core.Game {
+func Throttler(limit int, game game.Game) game.Game {
 	return &throttler{game: game, limit: limit, used: make(map[core.Team]int)}
 }

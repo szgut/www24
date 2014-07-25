@@ -23,11 +23,6 @@ type CommandError struct {
 	Desc string
 }
 
-type Game interface {
-	Execute(team Team, cmd Command) CommandResult
-	Tick()
-}
-
 func (err *CommandError) ShouldWait() bool {
 	return err != nil && err.Id == 6
 }

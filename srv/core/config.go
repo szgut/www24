@@ -10,7 +10,8 @@ type Config struct {
 	Interval    int
 	Commands    int
 	Connections int
-	Task		string
+	Game        string
+	Task        string
 }
 
 func ReadConfig(path string) (*Config, error) {
