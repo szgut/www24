@@ -10,8 +10,10 @@ type Backend interface {
 }
 
 type backend struct {
-	ch   chan commandMessage
-	wait func()
+	game   core.Game
+	cmdCh  chan commandMessage
+	tickCh notifier
+	wait   func()
 }
 
 type commandMessage struct {
@@ -22,7 +24,7 @@ type commandMessage struct {
 
 func (b *backend) Command(team core.Team, cmd core.Command) core.CommandResult {
 	ch := make(chan core.CommandResult)
-	b.ch <- commandMessage{team, cmd, ch}
+	b.cmdCh <- commandMessage{team, cmd, ch}
 	return <-ch
 }
 
@@ -30,28 +32,31 @@ func (b *backend) Wait() {
 	b.wait()
 }
 
-func StartNew(tickInterval int, game core.Game) Backend {
-	cmdCh := make(chan commandMessage)
-	tickWait, tickCh := newTicker(tickInterval)
-	go func() {
-		for {
-			select {
-			case <-tickCh:
-				game.Tick()
-				tickCh.notify()
-				continue
-			default:
-			}
-			select {
-			case <-tickCh:
-				game.Tick()
-				tickCh.notify()
-			case msg := <-cmdCh:
-				msg.ch <- game.Execute(msg.team, msg.cmd)
-			}
+func (b *backend) Run() {
+	for {
+		select {
+		case <-b.tickCh:
+			b.game.Tick()
+			b.tickCh.notify()
+			continue
+		default:
 		}
-	}()
-	return &backend{ch: cmdCh, wait: tickWait}
+		select {
+		case <-b.tickCh:
+			b.game.Tick()
+			b.tickCh.notify()
+		case msg := <-b.cmdCh:
+			msg.ch <- b.game.Execute(msg.team, msg.cmd)
+		}
+	}
+}
+
+func StartNew(tickInterval int, game core.Game) Backend {
+	tck := newTicker(tickInterval)
+	bend := backend{cmdCh: make(chan commandMessage), game: game, wait: tck.Wait, tickCh: tck.backendCh}
+	tck.Start()
+	go bend.Run()
+	return &bend
 }
 
 type notifier chan int
@@ -63,20 +68,21 @@ func (ch notifier) wait() {
 	<-ch
 }
 
-func newTicker(interval int) (func(), notifier) {
-	tickCh := make(notifier)
+type ticker struct {
+	interval  int
+	backendCh notifier
+	listenCh  chan notifier
+}
 
+func (self *ticker) Start() {
+	tickCh := make(notifier)
 	go func() {
 		for {
-			time.Sleep(time.Duration(interval) * time.Second)
+			time.Sleep(time.Duration(self.interval) * time.Second)
 			tickCh.notify()
 			tickCh.wait()
 		}
 	}()
-
-	listenCh := make(chan notifier)
-	backendTickCh := make(notifier)
-
 	go func() {
 		queue := []notifier{}
 		for {
@@ -85,25 +91,26 @@ func newTicker(interval int) (func(), notifier) {
 			}
 			select {
 			case <-tickCh:
-				backendTickCh.notify()
-				backendTickCh.wait()
+				self.backendCh.notify()
+				self.backendCh.wait()
 				for _, listener := range queue {
 					listener.notify()
 				}
 				queue = nil
 				tickCh.notify()
-
-			case listener := <-listenCh:
+			case listener := <-self.listenCh:
 				queue = append(queue, listener)
 			}
 		}
 	}()
+}
 
-	wait := func() {
-		ch := make(notifier)
-		listenCh <- ch
-		ch.wait()
-	}
+func (self *ticker) Wait() {
+	ch := make(notifier)
+	self.listenCh <- ch
+	ch.wait()
+}
 
-	return wait, backendTickCh
+func newTicker(interval int) ticker {
+	return ticker{interval: interval, backendCh: make(notifier), listenCh: make(chan notifier)}
 }
