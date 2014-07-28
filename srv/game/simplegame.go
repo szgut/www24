@@ -2,6 +2,7 @@ package game
 
 import "log"
 import "github.com/szgut/www24/srv/core"
+import "github.com/szgut/www24/srv/score"
 
 type simpleGame struct {
 	turn int
@@ -20,6 +21,6 @@ func (game *simpleGame) Tick() {
 	log.Println("turn", game.turn)
 }
 
-func newSimpleGame(config *core.Config) Game {
+func newSimpleGame(config *core.Config, ss score.Storage) Game {
 	return new(simpleGame)
 }

@@ -6,6 +6,7 @@ import "os"
 import "log"
 import "github.com/szgut/www24/srv/backend"
 import "github.com/szgut/www24/srv/core"
+import "github.com/szgut/www24/srv/game"
 import "github.com/szgut/www24/srv/score"
 
 func check(err error) {
@@ -34,37 +35,43 @@ func initLogger() {
 	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
 }
 
+func createGame(config *core.Config, ss score.Storage) game.Game {
+	cons, err := game.RegistryFind(config.Game)
+	check(err)
+	game := cons(config, ss)
+	return Throttler(config.Commands, game)
+}
+
 func main() {
 	initLogger()
 	config, err := core.ReadConfig(configPath())
 	check(err)
 	log.Println("Teams:", config.ListTeams())
 
-	ss := score.NewScoreStorage(config.Path, config.Task)
+	ss := score.NewStorage(config.Path, config.Task)
 	fmt.Println(ss)
 
 	l := listen("localhost", config.Port)
 	defer l.Close()
 
-	bend, err := backend.StartNew(config)
-	check(err)
+	bend := backend.StartNew(config.Interval, createGame(config, ss))
 	dos := NewDoS(config.Connections)
 	for {
 		conn, err := l.Accept()
 		check(err)
-		if dos.Accept(conn) {
-			go handleConnection(conn, dos, config, bend)
-		} else {
+		if !dos.Accept(conn) {
 			conn.Close()
+			continue
 		}
+		go func() {
+			defer conn.Close()
+			defer dos.Release(conn)
+			handleConnection(NewProto(conn), config, bend)
+		}()
 	}
 }
 
-func handleConnection(conn net.Conn, dos DoS, auth core.Authenticator, bend backend.Backend) {
-	defer conn.Close()
-	defer dos.Release(conn)
-	proto := NewProto(conn)
-
+func handleConnection(proto Proto, auth core.Authenticator, bend backend.Backend) {
 	login, pass, err := proto.Credentials()
 	if err != nil {
 		return
@@ -74,7 +81,7 @@ func handleConnection(conn net.Conn, dos DoS, auth core.Authenticator, bend back
 		proto.Write(core.AuthenticationFailedError())
 	} else {
 		proto.Write(nil)
-		log.Println("Team", team, conn.RemoteAddr(), "authenticated")
+		log.Println("Team", team, "authenticated")
 		authenticated(proto, *team, bend)
 	}
 }

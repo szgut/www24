@@ -1,4 +1,4 @@
-package backend
+package main
 
 import "github.com/szgut/www24/srv/core"
 import "github.com/szgut/www24/srv/game"

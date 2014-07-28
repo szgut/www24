@@ -10,15 +10,15 @@ type Backend interface {
 	Wait()
 }
 
+type backend struct {
+	ch   chan commandMessage
+	wait func()
+}
+
 type commandMessage struct {
 	team core.Team
 	cmd  core.Command
 	ch   chan<- core.CommandResult
-}
-
-type backend struct {
-	ch   chan commandMessage
-	wait func()
 }
 
 func (b *backend) Command(team core.Team, cmd core.Command) core.CommandResult {
@@ -31,15 +31,9 @@ func (b *backend) Wait() {
 	b.wait()
 }
 
-func StartNew(config *core.Config) (Backend, error) {
-	cons, err := game.RegistryFind(config.Game)
-	if err != nil {
-		return nil, err
-	}
-	game := Throttler(config.Commands, cons(config))
-
+func StartNew(tickInterval int, game game.Game) Backend {
 	cmdCh := make(chan commandMessage)
-	tickWait, tickCh := newTicker(config.Interval)
+	tickWait, tickCh := newTicker(tickInterval)
 	go func() {
 		for {
 			select {
@@ -58,7 +52,7 @@ func StartNew(config *core.Config) (Backend, error) {
 			}
 		}
 	}()
-	return &backend{ch: cmdCh, wait: tickWait}, nil
+	return &backend{ch: cmdCh, wait: tickWait}
 }
 
 type notifier chan int
