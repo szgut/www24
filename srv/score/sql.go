@@ -2,9 +2,6 @@ package score
 
 import "github.com/szgut/www24/srv/core"
 
-//TODO: transactions
-//TODO: embedding, task
-
 type TaskQueries struct {
 	DB
 	task string
@@ -20,24 +17,19 @@ func (self *TaskQueries) LastSnapshot() int {
 	return snapshot
 }
 
-func (self *TaskQueries) UpdateScores(scores map[core.Team]float64, snapshot int) {
-	// TODO
+func (self *TaskQueries) WriteScores(scores map[core.Team]float64, snapshot int) {
+	tx := self.Begin()
+	defer tx.Commit()
+	tx.Exec("delete from score where task = ? and snapshot = ?", self.task, snapshot)
 	for team, score := range scores {
-		self.Exec("update score_teams set score = ? where team = ?, snapshot = ?", score, team.String(), snapshot)
+		tx.Exec("insert into score set score = ? where team = ?, snapshot = ?", score, team.String(), snapshot)
 	}
 }
 
-func (self *TaskQueries) TakeSnapshot(snapshot int) {
-	self.Exec("insert into score(id, team, task, score, snapshot)"+
-		"select null, team, task, score, ?, from score where task = ? and snapshot = 0", snapshot, self.task)
+func (self *TaskQueries) ReadScores(snapshot int) map[core.Team]float64 {
+	return nil
 }
 
-func (self *TaskQueries) Initialize() {
+func (self *TaskQueries) Clear() {
 	self.Exec("delete from score where task = ?", self.task)
-}
-
-func (self *TaskQueries) InitTeams(teams []core.Team) {
-	for _, team := range teams {
-		self.Exec("insert into score_teams(team, task) values(?,?)", team.String(), self.task)
-	}
 }

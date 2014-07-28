@@ -1,6 +1,5 @@
 package score
 
-import "fmt"
 import "log"
 import "database/sql"
 import _ "github.com/mattn/go-sqlite3"
@@ -40,26 +39,28 @@ func (db *DB) ScanQuery(dest interface{}, query string, args ...interface{}) {
 	}
 }
 
-func amain() {
-	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
-	db := ConnectDB("../../site/db.sqlite3")
-	defer db.Close()
-	fmt.Println(db)
-
-	var count int
-	db.ScanQuery(&count, "select count(*) from score_team")
-
-	db.Exec("insert into score_team(name, score) values(?,?)", fmt.Sprintf("Team%d", count+1), float64(count)/10)
-	//db.Exec("delete from score_team where name like 'b%'")
-
-	rows := db.Query("select name, score from score_team")
-	defer rows.Close()
-	for rows.Next() {
-		var name string
-		var score float64
-		if err := rows.Scan(&name, &score); err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(name, score)
+func (db *DB) Begin() Tx {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		log.Fatal(err)
 	}
+	return Tx{tx}
+}
+
+type Tx struct {
+	*sql.Tx
+}
+
+func (tx *Tx) Commit() {
+	if err := tx.Tx.Commit(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (tx *Tx) Exec(query string, args ...interface{}) sql.Result {
+	result, err := tx.Tx.Exec(query, args...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return result
 }

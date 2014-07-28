@@ -10,9 +10,8 @@ type Storage interface {
 }
 
 type storage struct {
-	db     DB
-	task   string
-	scores map[core.Team]float64
+	queries TaskQueries
+	scores  map[core.Team]float64
 }
 
 func (self *storage) Scored(team core.Team, change float64) error {
@@ -25,9 +24,7 @@ func (self *storage) Scored(team core.Team, change float64) error {
 }
 
 func (self *storage) SyncScores() {
-	for team, score := range self.scores {
-		self.db.Exec("update score_teams set score = ? where team = ?", score, team.String())
-	}
+	self.queries.WriteScores(self.scores, 0)
 }
 
 func (self *storage) TakeSnapshot() {
@@ -43,5 +40,5 @@ func InitializeDatabase(dbPath string, task string, teams []core.Team) {
 }
 
 func NewStorage(dbPath string, task string) Storage {
-	return &storage{db: ConnectDB(dbPath), task: task}
+	return &storage{queries: NewTaskQueries(dbPath, task)}
 }
