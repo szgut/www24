@@ -8,6 +8,7 @@ import "github.com/szgut/www24/srv/backend"
 import "github.com/szgut/www24/srv/core"
 import "github.com/szgut/www24/srv/game"
 import "github.com/szgut/www24/srv/score"
+import "github.com/szgut/www24/srv/limit"
 
 func check(err error) {
 	if err != nil {
@@ -35,11 +36,11 @@ func initLogger() {
 	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
 }
 
-func createGame(config *core.Config, ss score.Storage) game.Game {
+func createGame(config *core.Config, ss score.Storage) core.Game {
 	cons, err := game.RegistryFind(config.Game)
 	check(err)
 	game := cons(config, ss)
-	return Throttler(config.Commands, game)
+	return limit.Throttler(config.Commands, game)
 }
 
 func main() {
@@ -55,7 +56,7 @@ func main() {
 	defer l.Close()
 
 	bend := backend.StartNew(config.Interval, createGame(config, ss))
-	dos := NewDoS(config.Connections)
+	dos := limit.NewDoS(config.Connections)
 	for {
 		conn, err := l.Accept()
 		check(err)

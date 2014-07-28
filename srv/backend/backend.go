@@ -2,7 +2,6 @@ package backend
 
 import "time"
 import "log"
-import "github.com/szgut/www24/srv/game"
 import "github.com/szgut/www24/srv/core"
 
 type Backend interface {
@@ -31,7 +30,7 @@ func (b *backend) Wait() {
 	b.wait()
 }
 
-func StartNew(tickInterval int, game game.Game) Backend {
+func StartNew(tickInterval int, game core.Game) Backend {
 	cmdCh := make(chan commandMessage)
 	tickWait, tickCh := newTicker(tickInterval)
 	go func() {

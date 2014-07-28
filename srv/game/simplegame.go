@@ -21,6 +21,6 @@ func (game *simpleGame) Tick() {
 	log.Println("turn", game.turn)
 }
 
-func newSimpleGame(config *core.Config, ss score.Storage) Game {
+func newSimpleGame(config *core.Config, ss score.Storage) core.Game {
 	return new(simpleGame)
 }

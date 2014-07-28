@@ -1,5 +1,10 @@
 package core
 
+type Game interface {
+	Execute(team Team, cmd Command) CommandResult
+	Tick()
+}
+
 type Team struct {
 	login string
 }

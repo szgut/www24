@@ -1,4 +1,4 @@
-package main
+package limit
 
 import "log"
 import "net"
