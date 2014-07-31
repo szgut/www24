@@ -9,6 +9,10 @@ type Team struct {
 	login string
 }
 
+func NewTeam(login string) Team {
+	return Team{login}
+}
+
 func (team Team) String() string {
 	return team.login
 }

@@ -2,8 +2,8 @@ package main
 
 import "fmt"
 import "net"
-import "os"
 import "log"
+import "flag"
 import "github.com/szgut/www24/srv/backend"
 import "github.com/szgut/www24/srv/core"
 import "github.com/szgut/www24/srv/game"
@@ -16,47 +16,31 @@ func check(err error) {
 	}
 }
 
-func listen(host string, port int) net.Listener {
-	hostport := fmt.Sprintf("%s:%d", host, port)
-	listener, err := net.Listen("tcp", hostport)
-	check(err)
-	log.Println("Listening on " + hostport)
-	return listener
-}
-
-func configPath() string {
-	if len(os.Args) != 2 {
-		fmt.Printf("%s <config path>\n", os.Args[0])
-		os.Exit(1)
-	}
-	return os.Args[1]
-}
-
-func initLogger() {
+func flags() Args {
 	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
+	var args Args
+	flag.StringVar(&args.configPath, "conf", "conf.yml", "config file path")
+	flag.StringVar(&args.task, "task", "task", "task name")
+	flag.Parse()
+	return args
 }
 
-func createGame(config *core.Config, ss score.Storage) core.Game {
-	cons, err := game.RegistryFind(config.Game)
-	check(err)
-	game := cons(config, ss)
-	return limit.Throttler(config.Commands, game)
+type Args struct {
+	configPath string
+	task       string
 }
 
 func main() {
-	initLogger()
-	config, err := core.ReadConfig(configPath())
-	check(err)
-	log.Println("Teams:", config.ListTeams())
+	args := flags()
 
-	ss := score.NewStorage(config.Path, config.Task)
-	fmt.Println(ss)
-
-	l := listen("localhost", config.Port)
-	defer l.Close()
-
-	bend := backend.StartNew(config.Interval, createGame(config, ss))
+	config, taskConfig := getConfigs(args.configPath, args.task)
+	ss := score.NewStorage(config.Path, args.task)
+	game := createGame(taskConfig, ss)
+	bend := backend.StartNew(taskConfig.TickInterval, game)
 	dos := limit.NewDoS(config.Connections)
+
+	l := listen("localhost", taskConfig.Port)
+	defer l.Close()
 	for {
 		conn, err := l.Accept()
 		check(err)
@@ -72,7 +56,32 @@ func main() {
 	}
 }
 
-func handleConnection(proto Proto, auth core.Authenticator, bend backend.Backend) {
+func getConfigs(path string, task string) (*Config, *TaskConfig) {
+	config, err := ReadConfig(path)
+	check(err)
+	taskConfig, ok := config.Tasks[task]
+	if !ok {
+		log.Fatalf("task \"%s\" not found in config", task)
+	}
+	return config, &taskConfig
+}
+
+func listen(host string, port int) net.Listener {
+	hostport := fmt.Sprintf("%s:%d", host, port)
+	listener, err := net.Listen("tcp", hostport)
+	check(err)
+	log.Println("Listening on " + hostport)
+	return listener
+}
+
+func createGame(taskConfig *TaskConfig, ss score.Storage) core.Game {
+	cons, err := game.RegistryFind(taskConfig.Game)
+	check(err)
+	game := cons(taskConfig.Params, ss)
+	return limit.Throttler(taskConfig.Commands, game)
+}
+
+func handleConnection(proto Proto, auth Authenticator, bend backend.Backend) {
 	login, pass, err := proto.Credentials()
 	if err != nil {
 		return

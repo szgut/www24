@@ -4,7 +4,8 @@ import "fmt"
 import "github.com/szgut/www24/srv/core"
 import "github.com/szgut/www24/srv/score"
 
-type Cons func(config *core.Config, ss score.Storage) core.Game
+type Params map[string]string
+type Cons func(params Params, ss score.Storage) core.Game
 
 func RegistryFind(name string) (Cons, error) {
 	cons, ok := map[string]Cons{
