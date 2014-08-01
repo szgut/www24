@@ -78,9 +78,9 @@ func (self *ticker) Start() {
 	tickCh := make(notifier)
 	go func() {
 		for {
-			time.Sleep(time.Duration(self.interval) * time.Second)
 			tickCh.notify()
 			tickCh.wait()
+			time.Sleep(time.Duration(self.interval) * time.Second)
 		}
 	}()
 	go func() {

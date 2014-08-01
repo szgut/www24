@@ -5,7 +5,7 @@ import "github.com/szgut/www24/srv/core"
 import "github.com/szgut/www24/srv/score"
 
 type Params map[string]string
-type Cons func(params Params, ss score.Storage) core.Game
+type Cons func(params Params, firstRount int, ss score.Storage) core.Game
 
 func RegistryFind(name string) (Cons, error) {
 	cons, ok := map[string]Cons{

@@ -48,7 +48,7 @@ func (config *Config) Authenticate(login, pass string) *core.Team {
 	}
 }
 
-func (config *Config) ListTeams() []core.Team {
+func (config *Config) GetTeams() []core.Team {
 	teams := make([]core.Team, 0)
 	for login, _ := range config.Teams {
 		teams = append(teams, core.NewTeam(login))

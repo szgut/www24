@@ -1,7 +1,15 @@
 package score
 
 import "fmt"
+import "log"
 import "github.com/szgut/www24/srv/core"
+
+type Database interface {
+	Storage
+	Initialize(teams []core.Team)
+	ReadScores()
+	StartRound() int
+}
 
 type Storage interface {
 	Scored(team core.Team, change float64) error
@@ -28,17 +36,27 @@ func (self *storage) SyncScores() {
 }
 
 func (self *storage) TakeSnapshot() {
-
+	self.queries.WriteScores(self.scores, self.queries.LastSnapshot()+1)
 }
 
-func InitializeDatabase(dbPath string, task string, teams []core.Team) {
-	db := ConnectDB(dbPath)
-	db.Exec("delete from score_teams where task = ?", task)
+func (self *storage) Initialize(teams []core.Team) {
+	log.Println("Initializing database")
+	self.scores = make(map[core.Team]float64)
 	for _, team := range teams {
-		db.Exec("insert into score_teams(team, task) values(?,?)", team.String(), task)
+		self.scores[team] = 0
 	}
+	self.queries.Clear()
+	self.SyncScores()
 }
 
-func NewStorage(dbPath string, task string) Storage {
+func (self *storage) ReadScores() {
+	self.scores = self.queries.ReadScores(self.queries.LastSnapshot())
+}
+
+func (self *storage) StartRound() int {
+	return self.queries.LastSnapshot() + 1
+}
+
+func NewStorage(dbPath string, task string) Database {
 	return &storage{queries: NewTaskQueries(dbPath, task)}
 }

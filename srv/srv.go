@@ -21,6 +21,7 @@ func flags() Args {
 	var args Args
 	flag.StringVar(&args.configPath, "conf", "conf.yml", "config file path")
 	flag.StringVar(&args.task, "task", "task", "task name")
+	flag.BoolVar(&args.startNew, "start-new", false, "try to recover")
 	flag.Parse()
 	return args
 }
@@ -28,6 +29,7 @@ func flags() Args {
 type Args struct {
 	configPath string
 	task       string
+	startNew   bool
 }
 
 func main() {
@@ -35,7 +37,14 @@ func main() {
 
 	config, taskConfig := getConfigs(args.configPath, args.task)
 	ss := score.NewStorage(config.Path, args.task)
-	game := createGame(taskConfig, ss)
+	startRound := 1
+	if args.startNew {
+		ss.Initialize(config.GetTeams())
+	} else {
+		ss.ReadScores()
+		startRound = ss.StartRound()
+	}
+	game := createGame(taskConfig, startRound, ss)
 	bend := backend.StartNew(taskConfig.TickInterval, game)
 	dos := limit.NewDoS(config.Connections)
 
@@ -74,10 +83,10 @@ func listen(host string, port int) net.Listener {
 	return listener
 }
 
-func createGame(taskConfig *TaskConfig, ss score.Storage) core.Game {
+func createGame(taskConfig *TaskConfig, startRound int, ss score.Storage) core.Game {
 	cons, err := game.RegistryFind(taskConfig.Game)
 	check(err)
-	game := cons(taskConfig.Params, ss)
+	game := cons(taskConfig.Params, startRound, ss)
 	return limit.Throttler(taskConfig.Commands, game)
 }
 

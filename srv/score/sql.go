@@ -1,5 +1,6 @@
 package score
 
+import "log"
 import "github.com/szgut/www24/srv/core"
 
 type TaskQueries struct {
@@ -22,12 +23,23 @@ func (self *TaskQueries) WriteScores(scores map[core.Team]float64, snapshot int)
 	defer tx.Commit()
 	tx.Exec("delete from score where task = ? and snapshot = ?", self.task, snapshot)
 	for team, score := range scores {
-		tx.Exec("insert into score set score = ? where team = ?, snapshot = ?", score, team.String(), snapshot)
+		tx.Exec("insert into score(id, task, snapshot, team, score) values(null, ?, ?, ?, ?)",
+			self.task, snapshot, team.String(), score)
 	}
 }
 
 func (self *TaskQueries) ReadScores(snapshot int) map[core.Team]float64 {
-	return nil
+	rows := self.Query("select team, score from score where task = ? and snapshot = ?", self.task, snapshot)
+	scores := make(map[core.Team]float64)
+	for rows.Next() {
+		var login string
+		var score float64
+		if err := rows.Scan(&login, &score); err != nil {
+			log.Fatal(err)
+		}
+		scores[core.NewTeam(login)] = score
+	}
+	return scores
 }
 
 func (self *TaskQueries) Clear() {
