@@ -1,3 +1,4 @@
+{% load get_item %}
 <html>
 <head>
 <title>Contest Scores</title>
@@ -7,10 +8,21 @@
 <h1>Contest Scores</h1>
 
 <table border>
-<tr><th>team</th><th>score</th></tr>
-{% for team in teams %}
-<tr><td>{{team.name}}</td><td>{{team.score}}</td></tr>
-{% endfor %}
+	<tr>
+		<th></th>
+		{% for task in tasks %}
+		<th>{{task}}</th>
+		{% endfor %}
+	</tr>
+	{% for score, team in teams %}
+	<tr>
+		<th>{{team}}</th>
+		{% for task in tasks %}
+		<td>{{scores|get:team|get:task}}</td>
+		{% endfor %}
+		<td>{{score}}</td>
+	</tr>
+	{% endfor %}
 </table>
 
 </body>

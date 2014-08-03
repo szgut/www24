@@ -1,14 +1,15 @@
 from django.db import models
 
 class Score(models.Model):
-    team = models.CharField(max_length=100)
     task = models.CharField(max_length=100)
     snapshot = models.IntegerField()
-    score = models.FloatField()
+    team = models.CharField(max_length=100)
+    value = models.FloatField(db_column='score')
 
     class Meta:
         db_table = 'score'
-        unique_together = ('team', 'task', 'snapshot')
+        unique_together = ('task', 'snapshot', 'team')
+        index_together = [['task', 'snapshot', 'team'],]
 
     def __unicode__(self):
         return "%s/%s#%s" % (self.team, self.task, self.snapshot)
