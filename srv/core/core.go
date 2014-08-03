@@ -24,7 +24,15 @@ type Command struct {
 
 type CommandResult struct {
 	Err    *CommandError
-	Params []interface{}
+	Params [][]interface{}
+}
+
+func NewOkResult(params ...[]interface{}) CommandResult {
+	return CommandResult{Err: nil, Params: params}
+}
+
+func NewErrResult(err CommandError) CommandResult {
+	return CommandResult{Err: &err}
 }
 
 type CommandError struct {
@@ -36,15 +44,15 @@ func (err *CommandError) ShouldWait() bool {
 	return err != nil && err.Id == 6
 }
 
-func AuthenticationFailedError() *CommandError {
-	return &CommandError{1, "bad login or password"}
+func AuthenticationFailedError() CommandError {
+	return CommandError{1, "bad login or password"}
 }
-func UnknownCommandError() *CommandError {
-	return &CommandError{2, "unknown command"}
+func UnknownCommandError() CommandError {
+	return CommandError{2, "unknown command"}
 }
-func BadFormatError() *CommandError {
-	return &CommandError{3, "bad format"}
+func BadFormatError() CommandError {
+	return CommandError{3, "bad format"}
 }
-func CommandLimitReachedError() *CommandError {
-	return &CommandError{6, "commands limit reached, forced waiting activated"}
+func CommandLimitReachedError() CommandError {
+	return CommandError{6, "commands limit reached, forced waiting activated"}
 }

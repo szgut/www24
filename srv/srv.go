@@ -97,7 +97,8 @@ func handleConnection(proto Proto, auth Authenticator, bend backend.Backend) {
 	}
 	team := auth.Authenticate(login, pass)
 	if team == nil {
-		proto.Write(core.AuthenticationFailedError())
+		err := core.AuthenticationFailedError()
+		proto.Write(&err)
 	} else {
 		proto.Write(nil)
 		log.Println("Team", team, "authenticated")
@@ -120,7 +121,7 @@ func authenticated(proto Proto, team core.Team, bend backend.Backend) {
 			waitOk("WAITING")
 		} else {
 			result := bend.Command(team, *cmd)
-			proto.Write(result.Err, result.Params)
+			proto.Write(result.Err, result.Params...)
 			if result.Err.ShouldWait() {
 				waitOk("FORCED_WAITING")
 			}
