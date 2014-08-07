@@ -1,32 +1,26 @@
 package game
 
 import "log"
-import "strconv"
 import "github.com/szgut/www24/srv/core"
 import "github.com/szgut/www24/srv/score"
 
+func newSimpleGame(params Params, startRound int, ss score.Storage) core.Game {
+	log.Println("new game:", startRound, params)
+	game := simpleGame{ss: ss, round: startRound}
+	handles := map[string]interface{}{
+		"SCORE": game.cmdScore,
+		"CAT":   game.cmdCat,
+		"ADD":   game.cmdAdd,
+	}
+	game.Base = NewBase(handles)
+	return &game
+}
+
 type simpleGame struct {
+	*Base
 	round int
 	turn  int
 	ss    score.Storage
-}
-
-func (self *simpleGame) Execute(team core.Team, cmd core.Command) core.CommandResult {
-	if cmd.Name == "DUPA" {
-		return core.NewErrResult(core.CommandError{105, "spadaj"})
-	} else if cmd.Name == "SCORE" {
-		if len(cmd.Params) != 1 {
-			return core.NewErrResult(core.BadFormatError())
-		}
-		score, err := strconv.ParseFloat(cmd.Params[0], 64);
-		if err != nil {
-			return core.NewErrResult(core.BadFormatError())
-		}
-		self.ss.Scored(team, score)
-		return core.NewOkResult()
-	} else {
-		return core.NewOkResult([]interface{}{cmd.Name, cmd.Params})
-	}
 }
 
 func (self *simpleGame) Tick() {
@@ -40,7 +34,15 @@ func (self *simpleGame) Tick() {
 	log.Printf("tick %d/%d\n", self.turn, self.round)
 }
 
-func newSimpleGame(params Params, startRound int, ss score.Storage) core.Game {
-	log.Println("new game:", startRound, params)
-	return &simpleGame{ss: ss, round: startRound}
+func (self *simpleGame) cmdScore(team core.Team, score float64) core.CommandResult {
+	self.ss.Scored(team, score)
+	return core.NewOkResult()
+}
+
+func (self *simpleGame) cmdCat(team core.Team, a string, b string) core.CommandResult {
+	return core.NewOkResult([]interface{}{a + b})
+}
+
+func (self *simpleGame) cmdAdd(team core.Team, a, b int) core.CommandResult {
+	return core.NewOkResult([]interface{}{a + b})
 }
