@@ -7,7 +7,7 @@ import "github.com/szgut/www24/srv/core"
 
 type CommandHandle func(team core.Team, params []string) core.CommandResult
 
-type Base struct {
+type Router struct {
 	commands map[string]CommandHandle
 }
 
@@ -26,7 +26,7 @@ var parse = map[reflect.Kind]parser{
 	},
 }
 
-func NewBase(methods map[string]interface{}) *Base {
+func NewRouter(methods map[string]interface{}) *Router {
 	commands := make(map[string]CommandHandle)
 	for name, method := range methods {
 		typ := reflect.TypeOf(method)
@@ -45,21 +45,21 @@ func NewBase(methods map[string]interface{}) *Base {
 			if len(params) != paramc {
 				return core.NewErrResult(core.BadFormatError())
 			}
-			values := []reflect.Value{reflect.ValueOf(team)}
+			args := []reflect.Value{reflect.ValueOf(team)}
 			for i := range params {
-				val, err := parsers[i](params[i])
+				arg, err := parsers[i](params[i])
 				if err != nil {
 					return core.NewErrResult(core.BadFormatError())
 				}
-				values = append(values, reflect.ValueOf(val))
+				args = append(args, reflect.ValueOf(arg))
 			}
-			return val.Call(values)[0].Interface().(core.CommandResult)
+			return val.Call(args)[0].Interface().(core.CommandResult)
 		}
 	}
-	return &Base{commands: commands}
+	return &Router{commands: commands}
 }
 
-func (self *Base) Execute(team core.Team, cmd core.Command) core.CommandResult {
+func (self *Router) Execute(team core.Team, cmd core.Command) core.CommandResult {
 	handle, ok := self.commands[cmd.Name]
 	if !ok {
 		return core.NewErrResult(core.UnknownCommandError())

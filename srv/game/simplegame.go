@@ -1,37 +1,49 @@
 package game
 
 import "log"
+import "math/rand"
 import "github.com/szgut/www24/srv/core"
 import "github.com/szgut/www24/srv/score"
 
 func newSimpleGame(params Params, startRound int, ss score.Storage) core.Game {
 	log.Println("new game:", startRound, params)
 	game := simpleGame{ss: ss, round: startRound}
-	handles := map[string]interface{}{
+	game.Ticker = NewTicker(&game)
+	game.Router = NewRouter(map[string]interface{}{
 		"SCORE": game.cmdScore,
 		"CAT":   game.cmdCat,
 		"ADD":   game.cmdAdd,
-	}
-	game.Base = NewBase(handles)
+		"TURN":  game.Ticker.CmdTurn,
+	})
 	return &game
 }
 
 type simpleGame struct {
-	*Base
+	*Router
+	*Ticker
 	round int
-	turn  int
 	ss    score.Storage
 }
 
-func (self *simpleGame) Tick() {
-	self.turn++
-	if self.turn == 10 {
-		self.turn = 0
-		self.round++
-		self.ss.TakeSnapshot()
+func (self *simpleGame) NextRoundLength() int {
+	return rand.Intn(10) + 1
+}
+
+func (self *simpleGame) roundStart() {
+	log.Printf("starting round %d\n", self.round)
+}
+
+func (self *simpleGame) RoundEnd() {
+	self.ss.TakeSnapshot()
+	self.round++
+	self.roundStart()
+}
+
+func (self *simpleGame) Turn(turn, length int) {
+	log.Printf("turn %d/%d of round %d\n", turn, length, self.round)
+	if turn%2 == 0 {
+		self.ss.SyncScores()
 	}
-	self.ss.SyncScores()
-	log.Printf("tick %d/%d\n", self.turn, self.round)
 }
 
 func (self *simpleGame) cmdScore(team core.Team, score float64) core.CommandResult {
