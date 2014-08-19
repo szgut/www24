@@ -37,14 +37,13 @@ func main() {
 
 	config, taskConfig := getConfigs(args.configPath, args.task)
 	ss := score.NewStorage(config.Path, args.task)
-	startRound := 1
 	if args.startNew {
 		ss.Initialize(config.GetTeams())
+		return
 	} else {
 		ss.ReadScores()
-		startRound = ss.StartRound()
 	}
-	game := createGame(taskConfig, startRound, ss)
+	game := createGame(taskConfig, ss.StartRound(), ss)
 	bend := backend.StartNew(taskConfig.TickInterval, game)
 	dos := limit.NewDoS(config.Connections)
 
