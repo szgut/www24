@@ -1,7 +1,6 @@
 package backend
 
 import "time"
-import "log"
 import "github.com/szgut/www24/srv/core"
 
 type Backend interface {
@@ -86,9 +85,6 @@ func (self *ticker) Start() {
 	go func() {
 		queue := []notifier{}
 		for {
-			if len(queue) > 0 {
-				log.Println("waiting:", queue)
-			}
 			select {
 			case <-tickCh:
 				self.backendCh.notify()

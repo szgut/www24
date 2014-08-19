@@ -47,6 +47,9 @@ func (self *simpleGame) Turn(turn, length int) {
 }
 
 func (self *simpleGame) cmdScore(team core.Team, score float64) core.CommandResult {
+	if score > 10 || score < -10 {
+		return core.NewErrResult(101, "too greedy")
+	}
 	self.ss.Scored(team, score)
 	return core.NewOkResult()
 }

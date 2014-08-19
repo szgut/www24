@@ -47,7 +47,7 @@ func main() {
 	bend := backend.StartNew(taskConfig.TickInterval, game)
 	dos := limit.NewDoS(config.Connections)
 
-	l := listen("localhost", taskConfig.Port)
+	l := listen("0.0.0.0", taskConfig.Port)
 	defer l.Close()
 	for {
 		conn, err := l.Accept()
