@@ -11,7 +11,7 @@ type throttler struct {
 func (self *throttler) Execute(team core.Team, cmd core.Command) core.CommandResult {
 	self.used[team]++
 	if self.used[team] > self.limit {
-		return core.NewErrResult(core.CommandLimitReachedError())
+		return core.ErrResult(core.CommandLimitReachedError())
 	}
 	return self.game.Execute(team, cmd)
 }

@@ -31,7 +31,11 @@ func NewOkResult(params ...[]interface{}) CommandResult {
 	return CommandResult{Err: nil, Params: params}
 }
 
-func NewErrResult(err CommandError) CommandResult {
+func NewErrResult(id int, desc string) CommandResult {
+	return ErrResult(CommandError{id, desc})
+}
+
+func ErrResult(err CommandError) CommandResult {
 	return CommandResult{Err: &err}
 }
 

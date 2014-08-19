@@ -43,13 +43,13 @@ func NewRouter(methods map[string]interface{}) *Router {
 		}
 		commands[name] = func(team core.Team, params []string) core.CommandResult {
 			if len(params) != paramc {
-				return core.NewErrResult(core.BadFormatError())
+				return core.ErrResult(core.BadFormatError())
 			}
 			args := []reflect.Value{reflect.ValueOf(team)}
 			for i := range params {
 				arg, err := parsers[i](params[i])
 				if err != nil {
-					return core.NewErrResult(core.BadFormatError())
+					return core.ErrResult(core.BadFormatError())
 				}
 				args = append(args, reflect.ValueOf(arg))
 			}
@@ -62,7 +62,7 @@ func NewRouter(methods map[string]interface{}) *Router {
 func (self *Router) Execute(team core.Team, cmd core.Command) core.CommandResult {
 	handle, ok := self.commands[cmd.Name]
 	if !ok {
-		return core.NewErrResult(core.UnknownCommandError())
+		return core.ErrResult(core.UnknownCommandError())
 	}
 	return handle(team, cmd.Params)
 }
