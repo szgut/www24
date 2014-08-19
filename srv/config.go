@@ -16,8 +16,8 @@ type Config struct {
 type TaskConfig struct {
 	Port         int
 	Game         string
-	TickInterval int `yaml:"tick_interval"`
-	Commands     int `yaml:"commands_limit"`
+	TickInterval float64 `yaml:"tick_interval"`
+	Commands     int     `yaml:"commands_limit"`
 	Params       game.Params
 }
 

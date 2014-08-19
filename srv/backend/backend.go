@@ -50,7 +50,7 @@ func (b *backend) Run() {
 	}
 }
 
-func StartNew(tickInterval int, game core.Game) Backend {
+func StartNew(tickInterval float64, game core.Game) Backend {
 	tck := newTicker(tickInterval)
 	bend := backend{cmdCh: make(chan commandMessage), game: game, wait: tck.Wait, tickCh: tck.backendCh}
 	tck.Start()
@@ -68,7 +68,7 @@ func (ch notifier) wait() {
 }
 
 type ticker struct {
-	interval  int
+	interval  float64
 	backendCh notifier
 	listenCh  chan notifier
 }
@@ -79,7 +79,8 @@ func (self *ticker) Start() {
 		for {
 			tickCh.notify()
 			tickCh.wait()
-			time.Sleep(time.Duration(self.interval) * time.Second)
+			millis := self.interval * 1000
+			time.Sleep(time.Duration(millis) * time.Millisecond)
 		}
 	}()
 	go func() {
@@ -107,6 +108,6 @@ func (self *ticker) Wait() {
 	ch.wait()
 }
 
-func newTicker(interval int) ticker {
+func newTicker(interval float64) ticker {
 	return ticker{interval: interval, backendCh: make(notifier), listenCh: make(chan notifier)}
 }
