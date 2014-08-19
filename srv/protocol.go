@@ -28,15 +28,22 @@ func (proto *Proto) writeln(values ...interface{}) error {
 	return err
 }
 
-func (proto *Proto) Write(err *core.CommandError, lines ...[]interface{}) {
-	if err == nil {
-		proto.writeln("OK")
+func (proto *Proto) Write(cmdErr *core.CommandError, lines ...[]interface{}) error {
+	if cmdErr == nil {
+		if err := proto.writeln("OK"); err != nil {
+			return err
+		}
 	} else {
-		proto.writeln(fmt.Sprintf("FAILED %d %s", err.Id, err.Desc))
+		if err := proto.writeln(fmt.Sprintf("FAILED %d %s", cmdErr.Id, cmdErr.Desc)); err != nil {
+			return err
+		}
 	}
 	for _, values := range lines {
-		proto.writeln(values...)
+		if err := proto.writeln(values...); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (proto *Proto) Command() *core.Command {

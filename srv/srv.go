@@ -120,7 +120,9 @@ func authenticated(proto Proto, team core.Team, bend backend.Backend) {
 			waitOk("WAITING")
 		} else {
 			result := bend.Command(team, *cmd)
-			proto.Write(result.Err, result.Params...)
+			if proto.Write(result.Err, result.Params...) != nil {
+				return
+			}
 			if result.Err.ShouldWait() {
 				waitOk("FORCED_WAITING")
 			}
