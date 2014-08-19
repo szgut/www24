@@ -1,9 +1,20 @@
 package game
 
+import "os"
 import "reflect"
 import "strconv"
 import "log"
 import "github.com/szgut/www24/srv/core"
+
+var cmdLogger *log.Logger
+
+func init() {
+	f, err := os.OpenFile("traffic", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Println("error opening file:", err)
+	}
+	cmdLogger = log.New(f, "", log.Ltime|log.Lmicroseconds)
+}
 
 type CommandHandle func(team core.Team, params []string) core.CommandResult
 
@@ -64,5 +75,11 @@ func (self *Router) Execute(team core.Team, cmd core.Command) core.CommandResult
 	if !ok {
 		return core.ErrResult(core.UnknownCommandError())
 	}
-	return handle(team, cmd.Params)
+	result := handle(team, cmd.Params)
+	if result.Err == nil {
+		cmdLogger.Println(team, cmd.Name, cmd.Params, result.Params)
+	} else {
+		cmdLogger.Println(team, cmd.Name, cmd.Params, *result.Err)
+	}
+	return result
 }
