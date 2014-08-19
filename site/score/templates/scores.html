@@ -2,6 +2,10 @@
 <html>
 <head>
 <title>Contest Scores</title>
+<style>
+	td {text-align: right}
+	td, th {padding: 2px}
+</style>
 </head>
 <body>
 
@@ -9,7 +13,7 @@
 
 <table border>
 	<tr>
-		<th></th>
+		<th style="border: 0"></th>
 		{% for task in tasks %}
 		<th>{{task}}</th>
 		{% endfor %}
@@ -18,9 +22,9 @@
 	<tr>
 		<th>{{team}}</th>
 		{% for task in tasks %}
-		<td>{{scores|get:team|get:task|floatformat:-2}}</td>
+		<td>{{scores|get:team|get:task|floatformat:2}}</td>
 		{% endfor %}
-		<td>{{score|floatformat:-2}}</td>
+		<td>{{score|floatformat:2}}</td>
 	</tr>
 	{% endfor %}
 </table>
