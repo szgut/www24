@@ -11,18 +11,20 @@ const MAX_SIZE = 100
 const SCAN_RANGE = 2
 const SCORE_SCALE = 1.05
 
+const SIZE_SCORE_EXP = 1.25
+
 func newFieldsGame(params Params, startRound int, ss score.Storage) core.Game {
 	log.Println("new game:", startRound, params)
 	rand.Seed(time.Now().UTC().UnixNano())
 	game := FieldsGame{ss: ss, round: startRound}
-	game.Ticker = NewTicker(&game)
 	game.Router = NewRouter(map[string]interface{}{
-		"TURN":           game.Ticker.CmdTurn,
+		"TURN":           game.cmdTurn,
 		"DESCRIBE_WORLD": game.cmdDescribeWorld,
 		"BUY":            game.cmdBuy,
 		"SELL":           game.cmdSell,
 		"LAST_PURCHASES": game.cmdLastReservations,
 		"SCAN":           game.cmdScan,
+		"LEFT_SQUARES":   game.cmdLeftSquares,
 	})
 	game.roundStart()
 	return &game
@@ -30,19 +32,33 @@ func newFieldsGame(params Params, startRound int, ss score.Storage) core.Game {
 
 type FieldsGame struct {
 	*Router
-	*Ticker
-	round int
-	ss    score.Storage
+	ss     score.Storage
+	round  int
+	turn   int
+	length int
 
 	owner           [][]core.Team
 	n               int
 	m               int
 	soldSq          map[Square]bool
 	roundScoreScale float64
+	leftSquares     int
 
 	reservations     map[core.Team]Square
 	lastReservations map[core.Team]Square
 	//sold             map[core.Team]bool
+}
+
+func (self *FieldsGame) Tick() {
+	self.turn++
+	if self.leftSquares == 0 {
+		self.length = min(self.length, self.turn+5)
+	}
+	if self.turn > self.length {
+		self.turn = 1
+		self.roundEnd()
+	}
+	self.turnStart()
 }
 
 type Square struct {
@@ -50,36 +66,38 @@ type Square struct {
 	y int
 }
 
-func (self *FieldsGame) NextRoundLength() int {
-	// TODO
-	return rand.Intn(1000) + 5
-}
-
 func (self *FieldsGame) roundStart() {
 	self.roundScoreScale = math.Pow(SCORE_SCALE, float64(self.round))
 	self.n = rand.Intn(MAX_SIZE) + 5
 	self.m = rand.Intn(MAX_SIZE) + 5
+	self.leftSquares = self.n * self.m
+	self.length = rand.Intn(self.leftSquares) + 5
+
 	log.Printf("starting round %d, %dx%d\n", self.round, self.n, self.m)
-	self.owner = make([][]core.Team, self.n)
+	self.owner = make([][]core.Team, self.n+1)
 	for i := range self.owner {
-		self.owner[i] = make([]core.Team, self.m)
+		self.owner[i] = make([]core.Team, self.m+1)
 	}
 	self.soldSq = make(map[Square]bool)
 }
 
-func (self *FieldsGame) RoundEnd() {
+func (self *FieldsGame) roundEnd() {
 	self.ss.TakeSnapshot()
 	self.round++
 	self.roundStart()
 }
 
-func (self *FieldsGame) Turn(turn, length int) {
-	log.Printf("turn %d/%d of round %d\n", turn, length, self.round)
+func (self *FieldsGame) turnStart() {
 	self.ss.SyncScores()
+	log.Printf("turn %d/%d of round %d\n", self.turn, self.length, self.round)
 
 	self.lastReservations = self.reservations
 	self.reservations = make(map[core.Team]Square)
 	//self.sold = make(map[core.Team]bool)
+}
+
+func (self *FieldsGame) cmdTurn(team core.Team) core.CommandResult {
+	return core.NewOkResult([]interface{}{self.turn, self.length})
 }
 
 func (self *FieldsGame) cmdDescribeWorld(team core.Team) core.CommandResult {
@@ -106,7 +124,12 @@ func (self *FieldsGame) cmdBuy(team core.Team, x, y int) core.CommandResult {
 	}
 	self.owner[x][y] = team
 	self.reservations[team] = Square{x, y}
+	self.leftSquares--
 	return core.NewOkResult()
+}
+
+func (self *FieldsGame) score(size int) float64 {
+	return math.Pow(float64(size), SIZE_SCORE_EXP) * self.roundScoreScale
 }
 
 func (self *FieldsGame) cmdSell(team core.Team, x1, y1, x2, y2 int) core.CommandResult {
@@ -125,10 +148,14 @@ func (self *FieldsGame) cmdSell(team core.Team, x1, y1, x2, y2 int) core.Command
 			if self.owner[x][y] != team {
 				return core.NewErrResult(105, "field not owned")
 			}
+			if self.soldSq[Square{x, y}] {
+				return core.NewErrResult(106, "field already sold")
+			}
 			sum++
 		}
 	}
-	self.ss.Scored(team, float64(sum*sum)*self.roundScoreScale)
+	log.Printf("team %s sells %dx%d scoring %f\n", team, bottom.x-top.x+1, bottom.y-top.y+1, self.score(sum))
+	self.ss.Scored(team, self.score(sum))
 	for x := top.x; x <= bottom.x; x++ {
 		for y := top.y; y <= bottom.y; y++ {
 			self.soldSq[Square{x, y}] = true
@@ -154,9 +181,9 @@ func (self *FieldsGame) cmdScan(team core.Team, x, y int) core.CommandResult {
 		}
 	}
 	lines := [][]interface{}{}
-	for i := x - SCAN_RANGE; i <= x+SCAN_RANGE; i++ {
+	for j := y - SCAN_RANGE; j <= y+SCAN_RANGE; j++ {
 		line := []interface{}{}
-		for j := y - SCAN_RANGE; j <= y+SCAN_RANGE; j++ {
+		for i := x - SCAN_RANGE; i <= x+SCAN_RANGE; i++ {
 			if !self.isOk(i, j) {
 				return core.NewErrResult(101, "not in range")
 			}
@@ -165,4 +192,8 @@ func (self *FieldsGame) cmdScan(team core.Team, x, y int) core.CommandResult {
 		lines = append(lines, line)
 	}
 	return core.NewOkResult(lines...)
+}
+
+func (self *FieldsGame) cmdLeftSquares(team core.Team) core.CommandResult {
+	return core.NewOkResult([]interface{}{self.leftSquares})
 }
