@@ -32,6 +32,7 @@ func (d *dos) Accept(conn net.Conn) bool {
 		log.Printf("Accepted %s (%d)\n", ip, d.used[ip])
 		return true
 	}
+	log.Printf("Denied %s (%d)\n", ip, d.used[ip])
 	return false
 }
 

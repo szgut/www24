@@ -10,10 +10,12 @@ func newSimpleGame(params Params, startRound int, ss score.Storage) core.Game {
 	game := simpleGame{ss: ss, round: startRound}
 	game.Ticker = NewTicker(&game)
 	game.Router = NewRouter(map[string]interface{}{
-		"SCORE": game.cmdScore,
-		"CAT":   game.cmdCat,
-		"ADD":   game.cmdAdd,
-		"TURN":  game.Ticker.CmdTurn,
+		"SCORE":        game.cmdScore,
+		"CAT":          game.cmdCat,
+		"ADD":          game.cmdAdd,
+		"MUL":          game.cmdMul,
+		"TURN":         game.Ticker.CmdTurn,
+		"SUPER_SECRET": game.cmdSuperSecret,
 	})
 	return &game
 }
@@ -21,8 +23,9 @@ func newSimpleGame(params Params, startRound int, ss score.Storage) core.Game {
 type simpleGame struct {
 	*Router
 	*Ticker
-	round int
-	ss    score.Storage
+	round  int
+	ss     score.Storage
+	secret int
 }
 
 func (self *simpleGame) NextRoundLength() int {
@@ -41,17 +44,19 @@ func (self *simpleGame) RoundEnd() {
 
 func (self *simpleGame) Turn(turn, length int) {
 	log.Printf("turn %d/%d of round %d\n", turn, length, self.round)
-	if turn%2 == 0 {
+	if turn == 1 {
 		self.ss.SyncScores()
 	}
+	self.secret = rand.Intn(1000) + 1
 }
 
 func (self *simpleGame) cmdScore(team core.Team, score float64) core.CommandResult {
-	if score > 10 || score < -10 {
+	if score == float64(self.secret) {
+		self.ss.Scored(team, score)
+		return core.NewOkResult()
+	} else {
 		return core.NewErrResult(101, "too greedy")
 	}
-	self.ss.Scored(team, score)
-	return core.NewOkResult()
 }
 
 func (self *simpleGame) cmdCat(team core.Team, a string, b string) core.CommandResult {
@@ -60,4 +65,12 @@ func (self *simpleGame) cmdCat(team core.Team, a string, b string) core.CommandR
 
 func (self *simpleGame) cmdAdd(team core.Team, a, b int) core.CommandResult {
 	return core.NewOkResult([]interface{}{a + b})
+}
+
+func (self *simpleGame) cmdMul(team core.Team, a, b float64) core.CommandResult {
+	return core.NewOkResult([]interface{}{a*b + 1})
+}
+
+func (self *simpleGame) cmdSuperSecret(team core.Team) core.CommandResult {
+	return core.NewOkResult([]interface{}{self.secret})
 }
