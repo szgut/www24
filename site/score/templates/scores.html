@@ -3,9 +3,16 @@
 <head>
 <title>Contest Scores</title>
 <style>
-	td {text-align: right}
+	td {text-align: center;}
+	td.score {text-align: right}
 	td, th {padding: 2px}
+	span {font-size: 80%; color: grey;}
 </style>
+<script>
+setTimeout(function() {
+	window.location.reload(1);
+}, 5000);
+</script>
 </head>
 <body>
 
@@ -13,18 +20,24 @@
 
 <table border>
 	<tr>
-		<th style="border: 0"></th>
+		<td>lp</td>
+		<td>login</td>
 		{% for task in tasks %}
 		<th>{{task}}</th>
 		{% endfor %}
+		<td>total</td>
 	</tr>
 	{% for score, team in teams %}
 	<tr>
+		<td>{{forloop.counter}}</td>
 		<th>{{team}}</th>
 		{% for task in tasks %}
-		<td>{{scores|get:team|get:task|floatformat:2}}</td>
+		<td class=score>
+			<b>{{scores_big|get:team|get:task|floatformat:2}}</b><br/>
+			<span>{{scores|get:team|get:task|floatformat:2}}</span>
+		</td>
 		{% endfor %}
-		<td>{{score|floatformat:2}}</td>
+		<td class=score>{{score|floatformat:2}}</td>
 	</tr>
 	{% endfor %}
 </table>
