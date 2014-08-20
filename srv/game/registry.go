@@ -10,6 +10,7 @@ type Cons func(params Params, firstRount int, ss score.Storage) core.Game
 func RegistryFind(name string) (Cons, error) {
 	cons, ok := map[string]Cons{
 		"simple": newSimpleGame,
+		"fields": newFieldsGame,
 	}[name]
 	if !ok {
 		return nil, fmt.Errorf("Game %s not found in registry", name)
