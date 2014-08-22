@@ -35,6 +35,9 @@ var parse = map[reflect.Kind]parser{
 	reflect.Float64: func(param string) (interface{}, error) {
 		return strconv.ParseFloat(param, 64)
 	},
+	reflect.Bool: func(param string) (interface{}, error) {
+		return strconv.ParseBool(param)
+	},
 }
 
 func NewRouter(methods map[string]interface{}) *Router {

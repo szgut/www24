@@ -26,7 +26,7 @@ def home(request, template_name='scores.html'):
         teams[score.team] += big
     
     return render(request, template_name, {
-        'tasks': set(map(lambda score: score.task, scores)),
+        'tasks': sorted(set(map(lambda score: score.task, scores))),
         'teams': sorted(((score, team) for team, score in teams.iteritems()), reverse=True),
         'scores': values,
         'scores_big': values_big,

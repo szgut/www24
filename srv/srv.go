@@ -43,15 +43,16 @@ func main() {
 	} else {
 		ss.ReadScores()
 	}
-	game := createGame(taskConfig, ss.StartRound(), ss)
+	game := createGame(taskConfig, ss.StartRound(), config.GetTeams(), ss)
 	bend := backend.StartNew(taskConfig.TickInterval, game)
 	dos := limit.NewDoS(config.Connections)
 
 	l := listen("0.0.0.0", taskConfig.Port)
 	defer l.Close()
 	for {
-		conn, err := l.Accept()
+		conn, err := l.AcceptTCP()
 		check(err)
+		conn.SetNoDelay(true)
 		if !dos.Accept(conn) {
 			conn.Close()
 			continue
@@ -74,18 +75,20 @@ func getConfigs(path string, task string) (*Config, *TaskConfig) {
 	return config, &taskConfig
 }
 
-func listen(host string, port int) net.Listener {
+func listen(host string, port int) *net.TCPListener {
 	hostport := fmt.Sprintf("%s:%d", host, port)
-	listener, err := net.Listen("tcp", hostport)
+	tcpAddr, err := net.ResolveTCPAddr("tcp", hostport)
+	check(err)
+	listener, err := net.ListenTCP("tcp", tcpAddr)
 	check(err)
 	log.Println("Listening on " + hostport)
 	return listener
 }
 
-func createGame(taskConfig *TaskConfig, startRound int, ss score.Storage) core.Game {
+func createGame(taskConfig *TaskConfig, startRound int, teams []core.Team, ss score.Storage) core.Game {
 	cons, err := game.RegistryFind(taskConfig.Game)
 	check(err)
-	game := cons(taskConfig.Params, startRound, ss)
+	game := cons(taskConfig.Params, startRound, teams, ss)
 	return limit.Throttler(taskConfig.Commands, game)
 }
 
